@@ -8,7 +8,7 @@ if exist ".venv\Scripts\activate.bat" (
 
 :: Run PyInstaller
 pyinstaller --name=improcess ^
-            --onefile ^
+            --onedir ^
             --windowed ^
             --icon=improcess.ico ^
             --hidden-import=PIL._tkinter_finder ^
@@ -20,6 +20,8 @@ pyinstaller --name=improcess ^
             --collect-data=tkinterdnd2 ^
             --add-data=".venv\Lib\site-packages\tkinterdnd2\tkdnd;tkinterdnd2/tkdnd" ^
             --add-data="alg;alg" ^
+            --noupx ^
+            --clean ^
             main.py
 
 :: Check if build was successful
@@ -30,7 +32,7 @@ if errorlevel 1 (
 )
 
 echo Build completed successfully!
-echo Executable is located in the dist folder
+echo Executable is located in the dist/improcess folder
 
 :: Clean up build files (optional)
 echo Cleaning up build files...

@@ -7,3 +7,4 @@ tkinterdnd2>=0.4.2
 matplotlib>=3.7.0
 scikit-image>=0.21.0
 tkinterdnd2
+pyinstaller
