@@ -5,39 +5,40 @@ from PIL import Image, ImageTk
 import os
 import importlib
 import inspect
-from typing import List, Callable, Dict, Final
+from typing import List, Callable, Dict
 from tkinterdnd2 import DND_FILES, TkinterDnD
 import numpy as np
 import threading
 
-SURPRISE_SEQUENCES: Final = {
-    "Medical Enhancement": [
-        {"name": "Rgb2Gray", "params": {}},
-        {"name": "ContrastStretching", "params": {"low_percentile": 2.0, "high_percentile": 98.0}},
-        {"name": "HistogramEqualization", "params": {}},
-        {"name": "GaussianLowPassFilter", "params": {"sigma": 0.5}}
-    ],
-    "Security Camera": [
-        {"name": "Rgb2Gray", "params": {}},
-        {"name": "ContrastStretching", "params": {"low_percentile": 1.0, "high_percentile": 99.0}},
-        {"name": "SobelEdgeDetection", "params": {}}
-    ],
-    "Artistic Effect": [
-        {"name": "FourierTransform", "params": {}},
-        {"name": "ButterworthHighPassFilter", "params": {"cutoff": 30, "order": 2}},
-        {"name": "InverseFourierTransform", "params": {}},
-        {"name": "ContrastStretching", "params": {"low_percentile": 5.0, "high_percentile": 95.0}}
-    ],
-    "Document Scanner": [
-        {"name": "Rgb2Gray", "params": {}},
-        {"name": "ContrastStretching", "params": {"low_percentile": 10.0, "high_percentile": 90.0}},
-        {"name": "Gray2Binary", "params": {"threshold": 127}}
-    ]
-}
-
 
 class ImageProcessorApp:
     def __init__(self):
+        self.param_frame = None
+        self.status_label = None
+        self.progress_frame = None
+        self.progress_bar = None
+        self.sequence_label = None
+        self.sequence_scroll = None
+        self.sequence_frame = None
+        self.clear_btn = None
+        self.apply_btn = None
+        self.middle_section = None
+        self.open_btn = None
+        self.save_btn = None
+        self.right_buttons = None
+        self.left_buttons = None
+        self.top_control = None
+        self.control_frame = None
+        self.no_param_label = None
+        self.param_scroll = None
+        self.param_scroll = None
+        self.tabview = None
+        self.alg_container = None
+        self.output_canvas = None
+        self.right_frame = None
+        self.input_canvas = None
+        self.left_frame = None
+        self.middle_frame = None
         self.image_loaded = False
         self.app = TkinterDnD.Tk()
         self.app.title("Image Processor")
@@ -97,6 +98,22 @@ class ImageProcessorApp:
                     "range": (3, 9),
                     "step": 2
                 }
+            },
+            "SobelEdgeDetection": {
+                "threshold": {
+                    "type": "int",
+                    "default": 30,
+                    "range": [0, 100],
+                    "step": 1,
+                },
+            },
+            "RobertsEdgeDetection": {
+                "threshold": {
+                    "type": "int",
+                    "default": 30,
+                    "range": [0, 100],
+                    "step": 1,
+                },
             },
             "GammaNoise": {
                 "shape": {
@@ -329,8 +346,8 @@ class ImageProcessorApp:
                 if param_info["type"] in ["float", "int"]:
                     value = ctk.CTkSlider(
                         param_frame,
-                        from_=param_info["range"][0],
-                        to=param_info["range"][1],
+                        from_=int(param_info["range"][0]),
+                        to=int(param_info["range"][1]),
                         number_of_steps=int((param_info["range"][1] - param_info["range"][0]) / param_info["step"])
                     )
                     # Set value from current parameters or default
@@ -348,11 +365,9 @@ class ImageProcessorApp:
                         if param_type == "int":
                             val = int(val)
                         label.configure(text=f"{val:.2f}" if param_type == "float" else str(val))
+                        
+                        # Update the parameters in both places
                         alg_item["params"][param] = val
-
-                        # Also update in current_params
-                        if alg_item["name"] not in self.current_params:
-                            self.current_params[alg_item["name"]] = {}
                         self.current_params[alg_item["name"]][param] = val
 
                     value.configure(command=update_value)
@@ -693,7 +708,8 @@ class ImageProcessorApp:
             print("Image Loaded")
             self.image_loaded = True
 
-    def display_image(self, image: Image.Image, canvas: tk.Canvas):
+    @staticmethod
+    def display_image(image: Image.Image, canvas: tk.Canvas):
         if image:
             photo = ImageTk.PhotoImage(image)
             canvas.delete("all")
