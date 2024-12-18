@@ -65,3 +65,4 @@ typings/
 
 # Custom Logs or Data Files
 # Add any other file or directory specific to your project
+__pycache__/medical_gui.cpython-311.pyc

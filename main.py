@@ -5,11 +5,10 @@ from PIL import Image, ImageTk
 import os
 import importlib
 import inspect
-from typing import List, Callable, Dict
+from typing import List, Callable, Dict, Final
 from tkinterdnd2 import DND_FILES, TkinterDnD
 import numpy as np
 import threading
-
 
 class ImageProcessorApp:
     def __init__(self):
@@ -53,8 +52,10 @@ class ImageProcessorApp:
         self.is_processing = False
 
         # Variables
-        self.input_image = None
-        self.output_image = None
+        # Initialize image variables
+        self.input_image = None  # Original loaded image
+        self.current_image = None  # Current processed image
+        self.output_image = None  # Final output image
         self.algorithm_sequence: List[Dict] = []
         self.algorithm_categories = {
             "Basic": ["Brightness", "Negative", "Rgb2Gray", "RGB2Binary", "Gray2Binary", "PointSharpening"],
@@ -396,8 +397,18 @@ class ImageProcessorApp:
         self.open_btn = ctk.CTkButton(self.left_buttons, text="Open Image", command=self.open_image)
         self.open_btn.pack(side=tk.LEFT, padx=2)
 
-        self.save_btn = ctk.CTkButton(self.left_buttons, text="Save Image", command=self.save_image)
+        self.save_btn = ctk.CTkButton(
+            self.left_buttons, text="Save Image", command=self.save_image)
         self.save_btn.pack(side=tk.LEFT, padx=2)
+
+        # Add Medical Enhancement button (disabled by default)
+        self.medical_btn = ctk.CTkButton(
+            self.left_buttons, 
+            text="Medical Enhancement",
+            command=self.show_medical_enhancement,
+            state="disabled"  # Initially disabled
+        )
+        self.medical_btn.pack(side=tk.LEFT, padx=2)
 
         # Right section for control buttons
         self.right_buttons = ctk.CTkFrame(self.top_control)
@@ -624,6 +635,7 @@ class ImageProcessorApp:
         if file_path.endswith('}'):
             file_path = file_path[:-1]
         self.load_image(file_path)
+        self.medical_btn.configure(state="normal")  # Enable medical button
 
     def load_algorithms(self):
         alg_path = os.path.join(os.path.dirname(__file__), 'alg')
@@ -664,6 +676,7 @@ class ImageProcessorApp:
         )
         if file_path:
             self.load_image(file_path)
+            self.medical_btn.configure(state="normal")  # Enable medical button
 
     def save_image(self):
         if not self.output_image:
@@ -710,16 +723,23 @@ class ImageProcessorApp:
 
     @staticmethod
     def display_image(image: Image.Image, canvas: tk.Canvas):
-        if image:
-            photo = ImageTk.PhotoImage(image)
-            canvas.delete("all")
-            canvas.image = photo  # Keep a reference
-            canvas.create_image(
-                canvas.winfo_width() // 2,
-                canvas.winfo_height() // 2,
-                image=photo,
-                anchor="center"
-            )
+        if image is None:
+            return
+            
+        # Convert NumPy array to PIL Image if needed
+        if isinstance(image, np.ndarray):
+            image = Image.fromarray(image.astype('uint8'))
+            
+        # Create PhotoImage
+        photo = ImageTk.PhotoImage(image)
+        canvas.delete("all")
+        canvas.image = photo  # Keep a reference
+        canvas.create_image(
+            canvas.winfo_width() // 2,
+            canvas.winfo_height() // 2,
+            image=photo,
+            anchor="center"
+        )
 
     def add_to_sequence(self, name: str, func: Callable):
         # Check if this would create a duplicate in sequence
@@ -760,6 +780,21 @@ class ImageProcessorApp:
 
         # Schedule message removal
         self.message_after_id = self.app.after(duration, lambda: self.message_label.configure(text=""))
+
+    def show_medical_enhancement(self):
+        """Show the medical enhancement window"""
+        if not hasattr(self, 'medical_gui'):
+            from medical_gui import MedicalEnhancementGUI
+            self.medical_gui = MedicalEnhancementGUI(self)
+        self.medical_gui.show()
+
+    def get_algorithm_module(self, name: str):
+        """Get algorithm module by name - used by medical enhancement GUI"""
+        try:
+            module = importlib.import_module(f"alg.{name}")
+            return getattr(module, name)
+        except (ImportError, AttributeError):
+            return None
 
     def run(self):
         self.app.mainloop()
