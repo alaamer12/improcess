@@ -5,7 +5,7 @@ from PIL import Image, ImageTk
 import os
 import importlib
 import inspect
-from typing import List, Callable, Dict, Final
+from typing import List, Callable, Dict
 from tkinterdnd2 import DND_FILES, TkinterDnD
 import numpy as np
 import threading
@@ -718,7 +718,6 @@ class ImageProcessorApp:
             self.apply_btn.configure(state="disabled")
             print(f"Error loading image: {e}")
         else:
-            print("Image Loaded")
             self.image_loaded = True
 
     @staticmethod
